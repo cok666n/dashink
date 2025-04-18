@@ -304,22 +304,46 @@ display:
         return "Ensoleillé";  // default fallback
       };
 
+      auto draw_soft_rounded_box = [&](int x, int y, int w, int h) {
+        // Corner radius
+        const int r = 4;
+
+        // Horizontal lines (top & bottom)
+        it.line(x + r, y,         x + w - r, y);         // Top
+        it.line(x + r, y + h,     x + w - r, y + h);     // Bottom
+
+        // Vertical lines (left & right)
+        it.line(x,     y + r,     x,     y + h - r);     // Left
+        it.line(x + w, y + r,     x + w, y + h - r);     // Right
+
+        // Simulated rounded corners using short lines (1px diagonal)
+        it.line(x + r - 1, y + 1,     x + r, y);         // Top-left
+        it.line(x + w - r + 1, y + 1, x + w - r, y);     // Top-right
+        it.line(x + r - 1, y + h - 1, x + r, y + h);     // Bottom-left
+        it.line(x + w - r + 1, y + h - 1, x + w - r, y + h); // Bottom-right
+      };
+
       // Thermostat widget
       auto draw_thermostat = [&](int x, int y, const char* name, Sensor* temp, Sensor* setpoint) {
+        const int box_w = 145;
+        const int box_h = 95;
+
+        draw_soft_rounded_box(x - 4, y - 4, box_w, box_h);
+
         it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%s", name);
 
         if (temp->has_state()) {
-          it.print(x, y + 28, id(weather_icons), "\U000F050F");  // thermometer
+          it.print(x, y + 28, id(weather_icons), "\U000F050F");
           it.printf(x + 30, y + 25, id(font_large), "%.1f°C", temp->state);
         } else {
           it.print(x + 30, y + 25, id(font_large), "--°C");
         }
 
         if (setpoint->has_state()) {
-          it.print(x, y + 60, id(weather_icons), "\U000F0493");  // gear
-          it.printf(x + 30, y + 65, id(font_small), "%.0f°C", setpoint->state);
+          it.print(x, y + 60, id(weather_icons), "\U000F0493");
+          it.printf(x + 35, y + 65, id(font_small), "%.0f°C", setpoint->state);
         } else {
-          it.print(x + 30, y + 65, id(font_small), "--°C");
+          it.print(x + 35, y + 65, id(font_small), "--°C");
         }
       };
 
@@ -398,12 +422,12 @@ display:
       
 
       // Thermostat layout
-      draw_thermostat(350, 40,  "Salon",     id(temp_salon),     id(setpoint_salon));
-      draw_thermostat(500, 40,  "Cuisine",   id(temp_cuisine),   id(setpoint_cuisine));
-      draw_thermostat(650, 40,  "Chambre",   id(temp_chambre),   id(setpoint_chambre));
-      draw_thermostat(350, 140, "Eloi",      id(temp_eloi),      id(setpoint_eloi));
-      draw_thermostat(500, 140, "Maxine",    id(temp_maxine),    id(setpoint_maxine));
-      draw_thermostat(650, 140, "Brasserie", id(temp_brasserie), id(setpoint_brasserie));
+      draw_thermostat(350, 50,  "Salon",     id(temp_salon),     id(setpoint_salon));
+      draw_thermostat(500, 50,  "Cuisine",   id(temp_cuisine),   id(setpoint_cuisine));
+      draw_thermostat(650, 50,  "Chambre",   id(temp_chambre),   id(setpoint_chambre));
+      draw_thermostat(350, 150, "Eloi",      id(temp_eloi),      id(setpoint_eloi));
+      draw_thermostat(500, 150, "Maxine",    id(temp_maxine),    id(setpoint_maxine));
+      draw_thermostat(650, 150, "Brasserie", id(temp_brasserie), id(setpoint_brasserie));
 
       // Timestamp
       it.printf(380, 420, id(font_xl), "%04d-%02d-%02d",  //Date
