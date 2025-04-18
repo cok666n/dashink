@@ -255,8 +255,13 @@ font:
 
   - file: "gfonts://Prosto One"
     id: font_xl
+    size: 44
+    glyphs: "1234567890:- °CcFf.,"
+
+  - file: "gfonts://Prosto One"
+    id: font_xxl
     size: 60
-    glyphs: "1234567890:- "
+    glyphs: "1234567890:- °CcFf.,"
   
   # Smaller version of the same font
   - file: "gfonts://Prosto One"
@@ -378,22 +383,25 @@ display:
           it.print(x + 35, y + 65, id(font_small), "--°C");
         }
       };
-
+      
       auto draw_forecast = [&](int x, int y, const char* day_name, Sensor* high, Sensor* low, TextSensor* condition) {
-        // Day label
-        it.printf(x + 12, y, id(font_small), TextAlign::TOP_LEFT, "%s", day_name);
+        const int box_width = 80;
+        const int center_x = x + box_width / 2;
 
-        // Icon
+        // Day label (centered)
+        it.printf(center_x, y, id(font_small), TextAlign::TOP_CENTER, "%s", day_name);
+
+        // Icon (centered)
         if (condition->has_state()) {
           const char* icon_char = get_weather_icon(condition->state.c_str());
-          it.print(x + 20, y + 20, id(weather_icons), icon_char);
+          it.print(center_x, y + 20, id(weather_icons), TextAlign::TOP_CENTER, icon_char);
         }
 
-        // High/Low
+        // High/Low (centered)
         if (high->has_state() && low->has_state()) {
-          it.printf(x, y + 50, id(font_small), "%2.0f°/%2.0f°", high->state, low->state);
+          it.printf(center_x, y + 50, id(font_small), TextAlign::TOP_CENTER, "%2.0f°/%2.0f°", high->state, low->state);
         } else {
-          it.print(x, y + 50, id(font_small), "--°/--°");
+          it.print(center_x, y + 50, id(font_small), TextAlign::TOP_CENTER, "--°/--°");
         }
       };
 
@@ -414,9 +422,9 @@ display:
       // Current temperature
       it.print(160, 60, id(weather_icons), "\U000F050F");
       if (id(ext_temp).has_state()) {
-        it.printf(200, 55, id(font_large), "%.1f°C", id(ext_temp).state);
+        it.printf(195, 45, id(font_xl), "%.1f°C", id(ext_temp).state);
       } else {
-        it.print(200, 55, id(font_large), "--°C");
+        it.print(295, 45, id(font_xl), "---.-°C");
       }
 
       // Current humidity
@@ -447,11 +455,10 @@ display:
       const char* jour2 = jours_fr[(dow + 2) % 7];
       const char* jour3 = jours_fr[(dow + 3) % 7];
     
-      draw_forecast(20, 220,  jour0, id(forecast0_high), id(forecast0_low), id(forecast0_condition));
-      draw_forecast(100, 220, jour1, id(forecast1_high), id(forecast1_low), id(forecast1_condition));
-      draw_forecast(180, 220, jour2, id(forecast2_high), id(forecast2_low), id(forecast2_condition));
-      draw_forecast(260, 220, jour3, id(forecast3_high), id(forecast3_low), id(forecast3_condition));
-      
+      draw_forecast(10, 220,  jour0, id(forecast0_high), id(forecast0_low), id(forecast0_condition));
+      draw_forecast(90, 220, jour1, id(forecast1_high), id(forecast1_low), id(forecast1_condition));
+      draw_forecast(170, 220, jour2, id(forecast2_high), id(forecast2_low), id(forecast2_condition));
+      draw_forecast(250, 220, jour3, id(forecast3_high), id(forecast3_low), id(forecast3_condition));      
 
       // Thermostat layout
       draw_thermostat(350, 50,  "Salon",     id(temp_salon),     id(setpoint_salon));
@@ -462,7 +469,7 @@ display:
       draw_thermostat(650, 150, "Brasserie", id(temp_brasserie), id(setpoint_brasserie));
 
       // Timestamp
-      it.printf(380, 420, id(font_xl), "%04d-%02d-%02d",  //Date
+      it.printf(380, 420, id(font_xxl), "%04d-%02d-%02d",  //Date
           time.year, time.month, time.day_of_month
           );
       it.printf(10, 460, id(font_xs), "MaJ: %04d-%02d-%02d %02d:%02d",
