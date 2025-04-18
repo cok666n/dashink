@@ -1,6 +1,10 @@
 esphome:
   name: dashink
   friendly_name: DashInk
+  on_boot:
+    then:
+      - lambda: |-
+          id(boot_time) = millis();  // record boot timestamp
 
 esp32:
   board: esp32dev
@@ -34,12 +38,6 @@ captive_portal:
 time:
   - platform: homeassistant  # Preferred if connected to HA
     id: homeassistant_time
-#    on_time:
-#      - seconds: 0
-#        minutes: /1
-#        then:
-#        - lambda: |-
-#            id(epaper_display).update();
           
   # Alternative: NTP (use if not using Home Assistant)
   - platform: sntp
@@ -48,6 +46,40 @@ time:
       - 0.pool.ntp.org
       - 1.pool.ntp.org
 
+globals:
+  - id: last_update_time
+    type: unsigned long
+    restore_value: no
+    initial_value: '0'
+  
+  - id: boot_time
+    type: unsigned long
+    restore_value: no
+    initial_value: '0'
+
+  - id: force_refresh
+    type: bool
+    restore_value: no
+    initial_value: 'true'  # Force full draw on boot
+
+script:
+  - id: check_and_update_display
+    then:
+      - lambda: |-
+          unsigned long now = millis();
+          unsigned long since_boot = now - id(boot_time);
+          bool allow_initial_grace = since_boot < 120000;  // 2 min
+          bool can_refresh = (now - id(last_update_time) > 600000);  // 10 min
+
+          if (id(force_refresh) || allow_initial_grace || can_refresh) {
+            id(last_update_time) = now;
+            id(force_refresh) = false;
+            ESP_LOGI("display", "Updating display");
+            id(epaper_display).update();
+          } else {
+            ESP_LOGI("display", "Skipped display update (debounced)");
+          }
+
 text_sensor:
   - platform: homeassistant
     id: weather_condition
@@ -55,8 +87,7 @@ text_sensor:
     #attribute: "condition"
     on_value:
       then:
-        - lambda: |-
-            id(epaper_display).update();
+        - script.execute: check_and_update_display
   
   - platform: homeassistant
     id: forecast0_condition
@@ -81,8 +112,7 @@ sensor:
     name: "Temperature Ext."
     on_value:
       then: # Refresh display when value changes
-        - lambda: |-
-            id(epaper_display).update();  
+        - script.execute: check_and_update_display
 
   - platform: homeassistant
     id: ext_humidity
@@ -90,8 +120,7 @@ sensor:
     name: "Humidite Ext."
     on_value:
       then:
-        - lambda: |-
-            id(epaper_display).update();
+        - script.execute: check_and_update_display
 
   - platform: homeassistant
     id: forecast0_high
@@ -256,13 +285,16 @@ display:
     id: epaper_display
     cs_pin: GPIO15   # P15 = CS
     dc_pin: GPIO27   # P27 = DC
-    busy_pin: GPIO25 # P25 = BUSY
+    busy_pin:
+      number: GPIO25
+      inverted: true
     reset_pin: GPIO26 # P26 = RST
     #model: 7.50in-bV3-bwr 
     model: 7.50in-bv3
     #model: 7.50inV2p
     #full_update_every: 30
     update_interval: never
+    reset_duration: 2ms
     lambda: |-
       // Weather icon mapper
       auto get_weather_icon = [](const char* condition) -> const char* {
@@ -334,9 +366,9 @@ display:
 
         if (temp->has_state()) {
           it.print(x, y + 28, id(weather_icons), "\U000F050F");
-          it.printf(x + 30, y + 25, id(font_large), "%.1f°C", temp->state);
+          it.printf(x + 30, y + 25, id(font_large), "%.1f°", temp->state);
         } else {
-          it.print(x + 30, y + 25, id(font_large), "--°C");
+          it.print(x + 30, y + 25, id(font_large), "--°");
         }
 
         if (setpoint->has_state()) {
@@ -382,9 +414,9 @@ display:
       // Current temperature
       it.print(160, 60, id(weather_icons), "\U000F050F");
       if (id(ext_temp).has_state()) {
-        it.printf(200, 60, id(font_large), "%.1f°C", id(ext_temp).state);
+        it.printf(200, 55, id(font_large), "%.1f°C", id(ext_temp).state);
       } else {
-        it.print(200, 60, id(font_large), "--°C");
+        it.print(200, 55, id(font_large), "--°C");
       }
 
       // Current humidity
