@@ -1,0 +1,160 @@
+#add these sensors to homeassistant configuration.yaml file
+
+template:
+  - trigger:
+      - platform: time_pattern
+        hours: "/1"  # Update every hour
+      - platform: homeassistant
+        event: start  # Update on Home Assistant start
+    action:
+      - service: weather.get_forecasts
+        data:
+          type: daily
+        target:
+          entity_id: weather.tomorrow_io_maison_daily  # Replace with your weather entity ID
+        response_variable: daily
+    sensor:
+      # Day 0 (Today)
+      - name: "Forecast Day 0 High"
+        unit_of_measurement: "°C"
+        state: >
+          {% if daily['weather.tomorrow_io_maison_daily'].forecast | length > 0 %}
+            {{ daily['weather.tomorrow_io_maison_daily'].forecast[0].temperature }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+
+      - name: "Forecast Day 0 Low"
+        unit_of_measurement: "°C"
+        state: >
+          {% if daily['weather.tomorrow_io_maison_daily'].forecast | length > 0 %}
+            {{ daily['weather.tomorrow_io_maison_daily'].forecast[0].templow }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+       
+      - name: "Forecast Day 0 Precipitation Amount"
+        unit_of_measurement: "mm"
+        state: >
+          {% set forecast = daily['weather.tomorrow_io_maison_daily'].forecast %}
+          {{ forecast[0].precipitation if forecast and forecast[0].precipitation is defined else none }}
+        
+      - name: "Forecast Day 0 Precip Chance"
+        unit_of_measurement: "%"
+        state: >
+          {% set forecast = daily['weather.tomorrow_io_maison_daily'].forecast %}
+          {{ forecast[0].precipitation_probability if forecast and forecast[0].precipitation_probability is defined else none }}
+
+      #TODO: This does not work so far...
+      - name: "Forecast Day 0 Feels Like"
+        unit_of_measurement: "°C"
+        state: >
+          {% set forecast = daily['weather.tomorrow_io_maison_daily'].forecast %}
+          {{ forecast[0].apparent_temperature if forecast and forecast[0].apparent_temperature is defined else none }}
+
+      - name: "Forecast Day 0 Condition"
+        state: >
+          {% if daily['weather.tomorrow_io_maison_daily'].forecast | length > 0 %}
+            {{ daily['weather.tomorrow_io_maison_daily'].forecast[0].condition }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+
+      # Day 1 (Tomorrow)
+      - name: "Forecast Day 1 High"
+        unit_of_measurement: "°C"
+        state: >
+          {% if daily['weather.tomorrow_io_maison_daily'].forecast | length > 1 %}
+            {{ daily['weather.tomorrow_io_maison_daily'].forecast[1].temperature }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+
+      - name: "Forecast Day 1 Low"
+        unit_of_measurement: "°C"
+        state: >
+          {% if daily['weather.tomorrow_io_maison_daily'].forecast | length > 1 %}
+            {{ daily['weather.tomorrow_io_maison_daily'].forecast[1].templow }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+
+      - name: "Forecast Day 1 Condition"
+        state: >
+          {% if daily['weather.tomorrow_io_maison_daily'].forecast | length > 1 %}
+            {{ daily['weather.tomorrow_io_maison_daily'].forecast[1].condition }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+        
+      - name: "Forecast Day 1 Precip Chance"
+        unit_of_measurement: "%"
+        state: >
+          {% set forecast = daily['weather.tomorrow_io_maison_daily'].forecast %}
+          {{ forecast[1].precipitation_probability if forecast and forecast[1].precipitation_probability is defined else none }}
+        
+      # Day 2
+      - name: "Forecast Day 2 High"
+        unit_of_measurement: "°C"
+        state: >
+          {% if daily['weather.tomorrow_io_maison_daily'].forecast | length > 2 %}
+            {{ daily['weather.tomorrow_io_maison_daily'].forecast[2].temperature }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+
+      - name: "Forecast Day 2 Low"
+        unit_of_measurement: "°C"
+        state: >
+          {% if daily['weather.tomorrow_io_maison_daily'].forecast | length > 2 %}
+            {{ daily['weather.tomorrow_io_maison_daily'].forecast[2].templow }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+
+      - name: "Forecast Day 2 Condition"
+        state: >
+          {% if daily['weather.tomorrow_io_maison_daily'].forecast | length > 2 %}
+            {{ daily['weather.tomorrow_io_maison_daily'].forecast[2].condition }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+          
+      - name: "Forecast Day 2 Precip Chance"
+        unit_of_measurement: "%"
+        state: >
+          {% set forecast = daily['weather.tomorrow_io_maison_daily'].forecast %}
+          {{ forecast[2].precipitation_probability if forecast and forecast[2].precipitation_probability is defined else none }}
+        
+      # Day 3
+      - name: "Forecast Day 3 High"
+        unit_of_measurement: "°C"
+        state: >
+          {% if daily['weather.tomorrow_io_maison_daily'].forecast | length > 3 %}
+            {{ daily['weather.tomorrow_io_maison_daily'].forecast[3].temperature }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+
+      - name: "Forecast Day 3 Low"
+        unit_of_measurement: "°C"
+        state: >
+          {% if daily['weather.tomorrow_io_maison_daily'].forecast | length > 3 %}
+            {{ daily['weather.tomorrow_io_maison_daily'].forecast[3].templow }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+
+      - name: "Forecast Day 3 Condition"
+        state: >
+          {% if daily['weather.tomorrow_io_maison_daily'].forecast | length > 3 %}
+            {{ daily['weather.tomorrow_io_maison_daily'].forecast[3].condition }}
+          {% else %}
+            {{ none }}
+          {% endif %}
+      - name: "Forecast Day 3 Precip Chance"
+        unit_of_measurement: "%"
+        state: >
+          {% set forecast = daily['weather.tomorrow_io_maison_daily'].forecast %}
+          {{ forecast[3].precipitation_probability if forecast and forecast[3].precipitation_probability is defined else none }}
+
