@@ -1,0 +1,414 @@
+esphome:
+  name: dashink
+  friendly_name: DashInk
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Dashink Fallback Hotspot"
+    password: "aA9MbHOrL08e"
+
+captive_portal:
+
+# Enable time component (fetch time from NTP)
+time:
+  - platform: homeassistant  # Preferred if connected to HA
+    id: homeassistant_time
+#    on_time:
+#      - seconds: 0
+#        minutes: /1
+#        then:
+#        - lambda: |-
+#            id(epaper_display).update();
+          
+  # Alternative: NTP (use if not using Home Assistant)
+  - platform: sntp
+    id: sntp_time
+    servers:
+      - 0.pool.ntp.org
+      - 1.pool.ntp.org
+
+text_sensor:
+  - platform: homeassistant
+    id: weather_condition
+    entity_id: weather.forecast_maison  # Replace with your weather entity
+    #attribute: "condition"
+    on_value:
+      then:
+        - lambda: |-
+            id(epaper_display).update();
+  
+  - platform: homeassistant
+    id: forecast0_condition
+    entity_id: sensor.forecast_day_0_condition
+
+  - platform: homeassistant
+    id: forecast1_condition
+    entity_id: sensor.forecast_day_1_condition
+
+  - platform: homeassistant
+    id: forecast2_condition
+    entity_id: sensor.forecast_day_2_condition
+
+  - platform: homeassistant
+    id: forecast3_condition
+    entity_id: sensor.forecast_day_3_condition
+
+sensor:
+  - platform: homeassistant
+    id: ext_temp
+    entity_id: sensor.indoor_outdoor_meter_4260  # Replace with your temp sensor
+    name: "Temperature Ext."
+    on_value:
+      then: # Refresh display when value changes
+        - lambda: |-
+            id(epaper_display).update();  
+
+  - platform: homeassistant
+    id: ext_humidity
+    entity_id: sensor.indoor_outdoor_meter_4260_humidite  #  humidity sensor
+    name: "Humidite Ext."
+    on_value:
+      then:
+        - lambda: |-
+            id(epaper_display).update();
+
+  - platform: homeassistant
+    id: forecast0_high
+    entity_id: sensor.forecast_day_0_high
+        
+  - platform: homeassistant
+    id: forecast0_low
+    entity_id: sensor.forecast_day_0_low
+  
+  - platform: homeassistant
+    id: forecast0_precip_amount
+    entity_id: sensor.forecast_day_0_precipitation_amount
+
+  - platform: homeassistant
+    id: forecast0_precip
+    entity_id: sensor.forecast_day_0_precip_chance
+
+  - platform: homeassistant
+    id: forecast0_feelslike
+    entity_id: sensor.forecast_day_0_feels_like
+  
+  - platform: homeassistant
+    id: forecast1_high
+    entity_id: sensor.forecast_day_1_high
+  
+  - platform: homeassistant
+    id: forecast1_low
+    entity_id: sensor.forecast_day_1_low
+  
+  - platform: homeassistant
+    id: forecast1_precip
+    entity_id: sensor.forecast_day_1_precip_chance
+  
+  - platform: homeassistant
+    id: forecast2_high
+    entity_id: sensor.forecast_day_2_high
+  
+  - platform: homeassistant
+    id: forecast2_low
+    entity_id: sensor.forecast_day_2_low
+  
+  - platform: homeassistant
+    id: forecast2_precip
+    entity_id: sensor.forecast_day_2_precip_chance
+  
+  - platform: homeassistant
+    id: forecast3_high
+    entity_id: sensor.forecast_day_3_high
+  
+  - platform: homeassistant
+    id: forecast3_low
+    entity_id: sensor.forecast_day_3_low
+
+  - platform: homeassistant
+    id: forecast3_precip
+    entity_id: sensor.forecast_day_3_precip_chance
+
+  #Thermostats
+  - platform: homeassistant
+    id: temp_salon
+    entity_id: climate.thermostat_salon
+    attribute: current_temperature
+
+  - platform: homeassistant
+    id: setpoint_salon
+    entity_id: climate.thermostat_salon
+    attribute: temperature
+
+  - platform: homeassistant
+    id: temp_brasserie
+    entity_id: climate.thermostat_brasserie
+    attribute: current_temperature
+
+  - platform: homeassistant
+    id: setpoint_brasserie
+    entity_id: climate.thermostat_brasserie
+    attribute: temperature
+    
+  - platform: homeassistant
+    id: temp_chambre
+    entity_id: climate.thermostat_chambre
+    attribute: current_temperature
+
+  - platform: homeassistant
+    id: setpoint_chambre
+    entity_id: climate.thermostat_chambre
+    attribute: temperature
+  
+  - platform: homeassistant
+    id: temp_cuisine
+    entity_id: climate.thermostat_cuisine
+    attribute: current_temperature
+
+  - platform: homeassistant
+    id: setpoint_cuisine
+    entity_id: climate.thermostat_cuisine
+    attribute: temperature
+
+  - platform: homeassistant
+    id: temp_eloi
+    entity_id: climate.thermostat_eloi
+    attribute: current_temperature
+
+  - platform: homeassistant
+    id: setpoint_eloi
+    entity_id: climate.thermostat_eloi
+    attribute: temperature
+
+  - platform: homeassistant
+    id: temp_maxine
+    entity_id: climate.thermostat_maxine
+    attribute: current_temperature
+
+  - platform: homeassistant
+    id: setpoint_maxine
+    entity_id: climate.thermostat_maxine
+    attribute: temperature
+
+# Using ESP32's HSPI bus (matches your pinout)
+spi: 
+  clk_pin: GPIO13   # P13 = SCLK (HSPI CLK)
+  mosi_pin: GPIO14  # P14 = DIN (HSPI MOSI)
+  miso_pin: GPIO12  # HSPI MISO (unused but required)
+  interface: hardware
+
+font:
+    # Primary font with French support
+  - file: "gfonts://Prosto One"
+    id: font_large
+    size: 32
+    glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ° !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+
+  - file: "gfonts://Prosto One"
+    id: font_xl
+    size: 60
+    glyphs: "1234567890:- "
+  
+  # Smaller version of the same font
+  - file: "gfonts://Prosto One"
+    id: font_small
+    size: 20
+    glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ° !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+
+  # Smallest version of the same font
+  - file: "gfonts://Prosto One"
+    id: font_xs
+    size: 12
+    glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ° !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+  
+  - file: "https://raw.githubusercontent.com/Templarian/MaterialDesign-Webfont/master/fonts/materialdesignicons-webfont.ttf"
+    id: weather_icons_large
+    size: 120
+    glyphs: "\U000F0590\U000F0591\U000F0592\U000F0593\U000F0594\U000F0595\U000F0596\U000F0597\U000F0598\U000F0599\U000F059D\U000F059E\U000F067E\U000F067F\U000F05E1"
+
+  - file: "https://raw.githubusercontent.com/Templarian/MaterialDesign-Webfont/master/fonts/materialdesignicons-webfont.ttf"
+    id: weather_icons
+    size: 32
+    glyphs: "\U000F0590\U000F0591\U000F0592\U000F0593\U000F0594\U000F0595\U000F0596\U000F0597\U000F0598\U000F0599\U000F059D\U000F059E\U000F067E\U000F067F\U000F05E1\U000F058E\U000F0493\U000F050F\U000F1A35"
+
+display:
+  - platform: waveshare_epaper
+    id: epaper_display
+    cs_pin: GPIO15   # P15 = CS
+    dc_pin: GPIO27   # P27 = DC
+    busy_pin: GPIO25 # P25 = BUSY
+    reset_pin: GPIO26 # P26 = RST
+    #model: 7.50in-bV3-bwr 
+    model: 7.50in-bv3
+    #model: 7.50inV2p
+    #full_update_every: 30
+    update_interval: never
+    lambda: |-
+      // Weather icon mapper
+      auto get_weather_icon = [](const char* condition) -> const char* {
+        if (strstr(condition, "clear-night"))         return "\U000F0594";
+        else if (strstr(condition, "partlycloudy"))   return "\U000F0595";
+        else if (strstr(condition, "cloudy"))         return "\U000F0590";
+        else if (strstr(condition, "fog"))            return "\U000F0591";
+        else if (strstr(condition, "hail"))           return "\U000F0592";
+        else if (strstr(condition, "lightning-rainy"))return "\U000F067E";
+        else if (strstr(condition, "lightning"))      return "\U000F0593";
+        else if (strstr(condition, "pouring"))        return "\U000F0596";
+        else if (strstr(condition, "snowy-rainy"))    return "\U000F067F";
+        else if (strstr(condition, "rainy"))          return "\U000F0597";
+        else if (strstr(condition, "snowy"))          return "\U000F0598";
+        else if (strstr(condition, "sunny"))          return "\U000F0599";
+        else if (strstr(condition, "windy-variant"))  return "\U000F059E";
+        else if (strstr(condition, "windy"))          return "\U000F059D";
+        else if (strstr(condition, "exceptional"))    return "\U000F05E1";
+        return "\U000F0599"; // default: sunny
+      };
+
+      // Weather French description mapper
+      auto get_weather_description_fr = [](const char* condition) -> const char* {
+        if (strstr(condition, "clear-night"))          return "Nuit dégagée";
+        else if (strstr(condition, "partlycloudy"))    return "Partiellement nuageux";
+        else if (strstr(condition, "cloudy"))          return "Nuageux";
+        else if (strstr(condition, "fog"))             return "Brouillard";
+        else if (strstr(condition, "hail"))            return "Grêle";
+        else if (strstr(condition, "lightning-rainy")) return "Orage avec pluie";
+        else if (strstr(condition, "lightning"))       return "Orage";
+        else if (strstr(condition, "pouring"))         return "Pluie abondante";
+        else if (strstr(condition, "snowy-rainy"))     return "Neige et pluie";
+        else if (strstr(condition, "rainy"))           return "Pluvieux";
+        else if (strstr(condition, "snowy"))           return "Neigeux";
+        else if (strstr(condition, "sunny"))           return "Ensoleillé";
+        else if (strstr(condition, "windy-variant"))   return "Venteux (variable)";
+        else if (strstr(condition, "windy"))           return "Venteux";
+        else if (strstr(condition, "exceptional"))     return "Conditions exceptionnelles";
+        return "Ensoleillé";  // default fallback
+      };
+
+      // Thermostat widget
+      auto draw_thermostat = [&](int x, int y, const char* name, Sensor* temp, Sensor* setpoint) {
+        it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%s", name);
+
+        if (temp->has_state()) {
+          it.print(x, y + 28, id(weather_icons), "\U000F050F");  // thermometer
+          it.printf(x + 30, y + 25, id(font_large), "%.1f°C", temp->state);
+        } else {
+          it.print(x + 30, y + 25, id(font_large), "--°C");
+        }
+
+        if (setpoint->has_state()) {
+          it.print(x, y + 60, id(weather_icons), "\U000F0493");  // gear
+          it.printf(x + 30, y + 65, id(font_small), "%.0f°C", setpoint->state);
+        } else {
+          it.print(x + 30, y + 65, id(font_small), "--°C");
+        }
+      };
+
+      auto draw_forecast = [&](int x, int y, const char* day_name, Sensor* high, Sensor* low, TextSensor* condition) {
+        // Day label
+        it.printf(x + 12, y, id(font_small), TextAlign::TOP_LEFT, "%s", day_name);
+
+        // Icon
+        if (condition->has_state()) {
+          const char* icon_char = get_weather_icon(condition->state.c_str());
+          it.print(x + 20, y + 20, id(weather_icons), icon_char);
+        }
+
+        // High/Low
+        if (high->has_state() && low->has_state()) {
+          it.printf(x, y + 50, id(font_small), "%2.0f°/%2.0f°", high->state, low->state);
+        } else {
+          it.print(x, y + 50, id(font_small), "--°/--°");
+        }
+      };
+
+      auto time = id(homeassistant_time).now();
+
+      // Headings
+      it.print(20, 5, id(font_large), "Extérieur");
+      it.print(350, 5, id(font_large), "Intérieur");
+
+      // Current condition icon
+      if (id(weather_condition).has_state()) {
+        const char* condition = id(weather_condition).state.c_str();
+        const char* icon_char = get_weather_icon(condition);
+        it.print(10, 40, id(weather_icons_large), icon_char);
+        it.print(20, 160, id(font_small), get_weather_description_fr(condition));
+      }
+
+      // Current temperature
+      it.print(160, 60, id(weather_icons), "\U000F050F");
+      if (id(ext_temp).has_state()) {
+        it.printf(200, 60, id(font_large), "%.1f°C", id(ext_temp).state);
+      } else {
+        it.print(200, 60, id(font_large), "--°C");
+      }
+
+      // Current humidity
+      it.print(160, 90, id(weather_icons), "\U000F058E");
+      if (id(ext_humidity).has_state()) {
+        it.printf(200, 95, id(font_small), "%.0f%%", id(ext_humidity).state);
+      } else {
+        it.print(200, 95, id(font_small), "--");
+      }
+
+      //Precip chance
+      it.print(160, 120, id(weather_icons), "\U000F1A35");
+      if (id(forecast0_precip).has_state()) {
+        it.printf(200, 125, id(font_small), "%.0f%%", id(forecast0_precip).state);
+      } else {
+        it.print(200, 125, id(font_small), "--");
+      }
+
+
+      // Prévisions météo
+      it.print(20, 190, id(font_small), "Prévisions météo:");
+
+      const char* jours_fr[7] = { "Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam." };
+      int dow = id(homeassistant_time).now().day_of_week - 1;
+
+      const char* jour0 = "Auj.";
+      const char* jour1 = "Dem.";
+      const char* jour2 = jours_fr[(dow + 2) % 7];
+      const char* jour3 = jours_fr[(dow + 3) % 7];
+    
+      draw_forecast(20, 220,  jour0, id(forecast0_high), id(forecast0_low), id(forecast0_condition));
+      draw_forecast(100, 220, jour1, id(forecast1_high), id(forecast1_low), id(forecast1_condition));
+      draw_forecast(180, 220, jour2, id(forecast2_high), id(forecast2_low), id(forecast2_condition));
+      draw_forecast(260, 220, jour3, id(forecast3_high), id(forecast3_low), id(forecast3_condition));
+      
+
+      // Thermostat layout
+      draw_thermostat(350, 40,  "Salon",     id(temp_salon),     id(setpoint_salon));
+      draw_thermostat(500, 40,  "Cuisine",   id(temp_cuisine),   id(setpoint_cuisine));
+      draw_thermostat(650, 40,  "Chambre",   id(temp_chambre),   id(setpoint_chambre));
+      draw_thermostat(350, 140, "Eloi",      id(temp_eloi),      id(setpoint_eloi));
+      draw_thermostat(500, 140, "Maxine",    id(temp_maxine),    id(setpoint_maxine));
+      draw_thermostat(650, 140, "Brasserie", id(temp_brasserie), id(setpoint_brasserie));
+
+      // Timestamp
+      it.printf(380, 420, id(font_xl), "%04d-%02d-%02d",  //Date
+          time.year, time.month, time.day_of_month
+          );
+      it.printf(10, 460, id(font_xs), "MaJ: %04d-%02d-%02d %02d:%02d",
+          time.year, time.month, time.day_of_month,
+          time.hour, time.minute);
