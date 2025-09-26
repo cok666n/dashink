@@ -8,9 +8,9 @@ esphome:
             id(boot_time) = millis();
             ESP_LOGI("boot", "Boot started, waiting for initial data...");
 
-    - priority: 200  # Lower priority = runs after sensors are set up
+    - priority: 200
       then:
-        - delay: 10s  # Wait for API connection and initial subscriptions
+        - delay: 10s
         - script.execute: check_initial_data_ready
 
 esp32:
@@ -77,7 +77,7 @@ globals:
 
 script:
   - id: check_initial_data_ready
-    mode: single  # Important: only run one instance at a time
+    mode: restart
     then:
       - if:
           condition:
@@ -101,10 +101,10 @@ script:
             - script.execute: check_initial_data_ready
 
   - id: check_and_update_display
+    mode: queued
     then:
       - lambda: |-
           unsigned long now = millis();
-          unsigned long since_boot = now - id(boot_time);
           
           // During boot phase, only update if initial data is ready
           if (!id(initial_boot_complete)) {
@@ -124,57 +124,11 @@ script:
             ESP_LOGD("display", "Skipped display update (debounced)");
           }
 
-# Data changed trigger for normal operation (after boot)
-binary_sensor:
-  - platform: template
-    name: "Data Changed Trigger"
-    id: data_changed_trigger
-    filters:
-      - delayed_on: 10s  # Debounce changes
-    lambda: |-
-      // Only trigger after initial boot
-      if (!id(initial_boot_complete)) {
-        return false;
-      }
-      
-      // Static variables to track previous states
-      static float last_ext_temp = NAN;
-      static std::string last_weather_condition;
-      
-      bool changed = false;
-      
-      if (id(ext_temp).has_state() && id(ext_temp).state != last_ext_temp) {
-        last_ext_temp = id(ext_temp).state;
-        changed = true;
-      }
-      
-      if (id(weather_condition).has_state() && id(weather_condition).state != last_weather_condition) {
-        last_weather_condition = id(weather_condition).state;
-        changed = true;
-      }
-      
-      return changed;
-    on_press:
-      then:
-        - lambda: id(force_refresh) = true;
-        - script.execute: check_and_update_display
-
-# Periodic refresh in case we miss some changes
-interval:
-  - interval: 15min
-    then:
-      - if:
-          condition:
-            lambda: return id(initial_boot_complete);
-          then:
-            - lambda: id(force_refresh) = true;
-            - script.execute: check_and_update_display
-
 text_sensor:
   - platform: homeassistant
     id: weather_condition
     entity_id: weather.forecast_maison
-
+  
   - platform: homeassistant
     id: forecast0_condition
     entity_id: sensor.forecast_day_0_condition
@@ -258,7 +212,7 @@ sensor:
     id: forecast3_precip
     entity_id: sensor.forecast_day_3_precip_chance
 
-  # Thermostats
+  # Thermostats 
   - platform: homeassistant
     id: temp_salon
     entity_id: climate.thermostat_salon
@@ -268,6 +222,14 @@ sensor:
     id: setpoint_salon
     entity_id: climate.thermostat_salon
     attribute: temperature
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: return id(initial_boot_complete);
+            then:
+              - lambda: id(force_refresh) = true;
+              - script.execute: check_and_update_display
 
   - platform: homeassistant
     id: temp_brasserie
@@ -278,6 +240,14 @@ sensor:
     id: setpoint_brasserie
     entity_id: climate.thermostat_brasserie
     attribute: temperature
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: return id(initial_boot_complete);
+            then:
+              - lambda: id(force_refresh) = true;
+              - script.execute: check_and_update_display
     
   - platform: homeassistant
     id: temp_chambre
@@ -288,6 +258,14 @@ sensor:
     id: setpoint_chambre
     entity_id: climate.thermostat_chambre
     attribute: temperature
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: return id(initial_boot_complete);
+            then:
+              - lambda: id(force_refresh) = true;
+              - script.execute: check_and_update_display
   
   - platform: homeassistant
     id: temp_cuisine
@@ -298,6 +276,14 @@ sensor:
     id: setpoint_cuisine
     entity_id: climate.thermostat_cuisine
     attribute: temperature
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: return id(initial_boot_complete);
+            then:
+              - lambda: id(force_refresh) = true;
+              - script.execute: check_and_update_display
 
   - platform: homeassistant
     id: temp_eloi
@@ -308,6 +294,14 @@ sensor:
     id: setpoint_eloi
     entity_id: climate.thermostat_eloi
     attribute: temperature
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: return id(initial_boot_complete);
+            then:
+              - lambda: id(force_refresh) = true;
+              - script.execute: check_and_update_display
 
   - platform: homeassistant
     id: temp_maxine
@@ -318,6 +312,14 @@ sensor:
     id: setpoint_maxine
     entity_id: climate.thermostat_maxine
     attribute: temperature
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: return id(initial_boot_complete);
+            then:
+              - lambda: id(force_refresh) = true;
+              - script.execute: check_and_update_display
 
 # Using ESP32's HSPI bus (matches your pinout)
 spi: 
@@ -364,6 +366,16 @@ font:
     id: weather_icons
     size: 32
     glyphs: "\U000F0590\U000F0591\U000F0592\U000F0593\U000F0594\U000F0595\U000F0596\U000F0597\U000F0598\U000F0599\U000F059D\U000F059E\U000F067E\U000F067F\U000F05E1\U000F058E\U000F0493\U000F050F\U000F1A35"
+
+interval:
+  - interval: 15min
+    then:
+      - if:
+          condition:
+            lambda: return id(initial_boot_complete);
+          then:
+            - lambda: id(force_refresh) = true;
+            - script.execute: check_and_update_display
 
 display:
   - platform: waveshare_epaper
