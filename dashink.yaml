@@ -2,9 +2,16 @@ esphome:
   name: dashink
   friendly_name: DashInk
   on_boot:
-    then:
-      - lambda: |-
-          id(boot_time) = millis();  // record boot timestamp
+    - priority: 100
+      then:
+        - lambda: |-
+            id(boot_time) = millis();
+            ESP_LOGI("boot", "Boot started, waiting for initial data...");
+
+    - priority: 200  # Lower priority = runs after sensors are set up
+      then:
+        - delay: 10s  # Wait for API connection and initial subscriptions
+        - script.execute: check_initial_data_ready
 
 esp32:
   board: esp32dev
@@ -60,35 +67,114 @@ globals:
   - id: force_refresh
     type: bool
     restore_value: no
-    initial_value: 'true'  # Force full draw on boot
+    initial_value: 'true'
+
+  # Track if we've done the initial boot update
+  - id: initial_boot_complete
+    type: bool
+    restore_value: no
+    initial_value: 'false'
 
 script:
+  - id: check_initial_data_ready
+    mode: single  # Important: only run one instance at a time
+    then:
+      - if:
+          condition:
+            lambda: |-
+              // Check if all critical data is available
+              return id(weather_condition).has_state() &&
+                     id(ext_temp).has_state() &&
+                     id(temp_salon).has_state() &&
+                     id(temp_cuisine).has_state() &&
+                     id(temp_chambre).has_state() &&
+                     id(homeassistant_time).now().is_valid();
+          then:
+            - delay: 2s  # Small delay to ensure all data is stable
+            - lambda: |-
+                id(initial_boot_complete) = true;
+                id(force_refresh) = true;
+                ESP_LOGI("boot", "All initial data received, forcing display update");
+            - script.execute: check_and_update_display
+          else:
+            - delay: 5s  # Check again in 5 seconds
+            - script.execute: check_initial_data_ready
+
   - id: check_and_update_display
     then:
       - lambda: |-
           unsigned long now = millis();
           unsigned long since_boot = now - id(boot_time);
-          bool allow_initial_grace = since_boot < 120000;  // 2 min
+          
+          // During boot phase, only update if initial data is ready
+          if (!id(initial_boot_complete)) {
+            ESP_LOGD("display", "Skipping update - waiting for initial data");
+            return;
+          }
+          
+          // Normal update logic after boot complete
           bool can_refresh = (now - id(last_update_time) > 600000);  // 10 min
 
-          if (id(force_refresh) || allow_initial_grace || can_refresh) {
+          if (id(force_refresh) || can_refresh) {
             id(last_update_time) = now;
             id(force_refresh) = false;
             ESP_LOGI("display", "Updating display");
             id(epaper_display).update();
           } else {
-            ESP_LOGI("display", "Skipped display update (debounced)");
+            ESP_LOGD("display", "Skipped display update (debounced)");
           }
+
+# Data changed trigger for normal operation (after boot)
+binary_sensor:
+  - platform: template
+    name: "Data Changed Trigger"
+    id: data_changed_trigger
+    filters:
+      - delayed_on: 10s  # Debounce changes
+    lambda: |-
+      // Only trigger after initial boot
+      if (!id(initial_boot_complete)) {
+        return false;
+      }
+      
+      // Static variables to track previous states
+      static float last_ext_temp = NAN;
+      static std::string last_weather_condition;
+      
+      bool changed = false;
+      
+      if (id(ext_temp).has_state() && id(ext_temp).state != last_ext_temp) {
+        last_ext_temp = id(ext_temp).state;
+        changed = true;
+      }
+      
+      if (id(weather_condition).has_state() && id(weather_condition).state != last_weather_condition) {
+        last_weather_condition = id(weather_condition).state;
+        changed = true;
+      }
+      
+      return changed;
+    on_press:
+      then:
+        - lambda: id(force_refresh) = true;
+        - script.execute: check_and_update_display
+
+# Periodic refresh in case we miss some changes
+interval:
+  - interval: 15min
+    then:
+      - if:
+          condition:
+            lambda: return id(initial_boot_complete);
+          then:
+            - lambda: id(force_refresh) = true;
+            - script.execute: check_and_update_display
 
 text_sensor:
   - platform: homeassistant
     id: weather_condition
-    entity_id: weather.forecast_maison  # Replace with your weather entity
-    #attribute: "condition"
-    on_value:
-      then:
-        - script.execute: check_and_update_display
-  
+    entity_id: weather.forecast_maison
+
   - platform: homeassistant
     id: forecast0_condition
     entity_id: sensor.forecast_day_0_condition
@@ -108,19 +194,13 @@ text_sensor:
 sensor:
   - platform: homeassistant
     id: ext_temp
-    entity_id: sensor.indoor_outdoor_meter_4260  # Replace with your temp sensor
+    entity_id: sensor.indoor_outdoor_meter_4260
     name: "Temperature Ext."
-    on_value:
-      then: # Refresh display when value changes
-        - script.execute: check_and_update_display
 
   - platform: homeassistant
     id: ext_humidity
-    entity_id: sensor.indoor_outdoor_meter_4260_humidite  #  humidity sensor
+    entity_id: sensor.indoor_outdoor_meter_4260_humidite
     name: "Humidite Ext."
-    on_value:
-      then:
-        - script.execute: check_and_update_display
 
   - platform: homeassistant
     id: forecast0_high
@@ -178,7 +258,7 @@ sensor:
     id: forecast3_precip
     entity_id: sensor.forecast_day_3_precip_chance
 
-  #Thermostats
+  # Thermostats
   - platform: homeassistant
     id: temp_salon
     entity_id: climate.thermostat_salon
@@ -294,10 +374,7 @@ display:
       number: GPIO25
       inverted: true
     reset_pin: GPIO26 # P26 = RST
-    #model: 7.50in-bV3-bwr 
     model: 7.50in-bv3
-    #model: 7.50inV2p
-    #full_update_every: 30
     update_interval: never
     reset_duration: 2ms
     lambda: |-
@@ -442,7 +519,6 @@ display:
       } else {
         it.print(200, 125, id(font_small), "--");
       }
-
 
       // Prévisions météo
       it.print(20, 190, id(font_small), "Prévisions météo:");
