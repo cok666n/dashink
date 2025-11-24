@@ -330,29 +330,29 @@ spi:
 
 font:
     # Primary font with French support
-  - file: "gfonts://Prosto One"
+  - file: "gfonts://Martian Mono"
     id: font_large
     size: 32
     glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ° !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
 
-  - file: "gfonts://Prosto One"
+  - file: "gfonts://Martian Mono"
     id: font_xl
     size: 44
     glyphs: "1234567890:- °CcFf.,"
 
-  - file: "gfonts://Prosto One"
+  - file: "gfonts://Martian Mono"
     id: font_xxl
     size: 60
     glyphs: "1234567890:- °CcFf.,"
   
   # Smaller version of the same font
-  - file: "gfonts://Prosto One"
+  - file: "gfonts://Martian Mono"
     id: font_small
     size: 20
     glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ° !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
 
   # Smallest version of the same font
-  - file: "gfonts://Prosto One"
+  - file: "gfonts://Martian Mono"
     id: font_xs
     size: 12
     glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ° !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
@@ -509,31 +509,31 @@ display:
       }
 
       // Current temperature
-      it.print(160, 60, id(weather_icons), "\U000F050F");
+      it.print(140, 60, id(weather_icons), "\U000F050F");
       if (id(ext_temp).has_state()) {
-        it.printf(195, 45, id(font_xl), "%.1f°C", id(ext_temp).state);
+        it.printf(170, 45, id(font_xl), "%.1f°", id(ext_temp).state);
       } else {
-        it.print(295, 45, id(font_xl), "---.-°C");
+        it.print(170, 45, id(font_xl), "---.-°");
       }
 
       // Current humidity
-      it.print(160, 90, id(weather_icons), "\U000F058E");
+      it.print(140, 90, id(weather_icons), "\U000F058E");
       if (id(ext_humidity).has_state()) {
-        it.printf(200, 95, id(font_small), "%.0f%%", id(ext_humidity).state);
+        it.printf(175, 95, id(font_small), "%.0f%%", id(ext_humidity).state);
       } else {
-        it.print(200, 95, id(font_small), "--");
+        it.print(175, 95, id(font_small), "--");
       }
 
       //Precip chance
-      it.print(160, 120, id(weather_icons), "\U000F1A35");
+      it.print(140, 120, id(weather_icons), "\U000F1A35");
       if (id(forecast0_precip).has_state()) {
-        it.printf(200, 125, id(font_small), "%.0f%%", id(forecast0_precip).state);
+        it.printf(175, 125, id(font_small), "%.0f%%", id(forecast0_precip).state);
       } else {
-        it.print(200, 125, id(font_small), "--");
+        it.print(175, 125, id(font_small), "--");
       }
 
       // Prévisions météo
-      it.print(20, 190, id(font_small), "Prévisions météo:");
+      it.print(20, 200, id(font_small), "Prévisions météo:");
 
       const char* jours_fr[7] = { "Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam." };
       int dow = id(homeassistant_time).now().day_of_week - 1;
@@ -543,10 +543,10 @@ display:
       const char* jour2 = jours_fr[(dow + 2) % 7];
       const char* jour3 = jours_fr[(dow + 3) % 7];
     
-      draw_forecast(10, 220,  jour0, id(forecast0_high), id(forecast0_low), id(forecast0_condition));
-      draw_forecast(90, 220, jour1, id(forecast1_high), id(forecast1_low), id(forecast1_condition));
-      draw_forecast(170, 220, jour2, id(forecast2_high), id(forecast2_low), id(forecast2_condition));
-      draw_forecast(250, 220, jour3, id(forecast3_high), id(forecast3_low), id(forecast3_condition));      
+      draw_forecast(10, 230,  jour0, id(forecast0_high), id(forecast0_low), id(forecast0_condition));
+      draw_forecast(90, 230, jour1, id(forecast1_high), id(forecast1_low), id(forecast1_condition));
+      draw_forecast(170, 230, jour2, id(forecast2_high), id(forecast2_low), id(forecast2_condition));
+      draw_forecast(250, 230, jour3, id(forecast3_high), id(forecast3_low), id(forecast3_condition));      
 
       // Thermostat layout
       draw_thermostat(350, 50,  "Salon",     id(temp_salon),     id(setpoint_salon));
