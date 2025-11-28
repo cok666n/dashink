@@ -144,6 +144,10 @@ text_sensor:
   - platform: homeassistant
     id: forecast3_condition
     entity_id: sensor.forecast_day_3_condition
+  
+  - platform: homeassistant
+    id: school_event
+    entity_id: sensor.today_s_school_event
 
 sensor:
   - platform: homeassistant
@@ -354,6 +358,12 @@ font:
   # Smallest version of the same font
   - file: "gfonts://Martian Mono"
     id: font_xs
+    size: 16
+    glyphs: "*+,- ./0123456789:;°CcFf"
+
+  # Smallest version of the same font
+  - file: "gfonts://Martian Mono"
+    id: font_xxs
     size: 12
     glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ° !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
   
@@ -366,6 +376,11 @@ font:
     id: weather_icons
     size: 32
     glyphs: "\U000F0590\U000F0591\U000F0592\U000F0593\U000F0594\U000F0595\U000F0596\U000F0597\U000F0598\U000F0599\U000F059D\U000F059E\U000F067E\U000F067F\U000F05E1\U000F058E\U000F0493\U000F050F\U000F1A35"
+
+  - file: "https://raw.githubusercontent.com/Templarian/MaterialDesign-Webfont/master/fonts/materialdesignicons-webfont.ttf"
+    id: other_icons
+    size: 32
+    glyphs: "\U000F00ED\U000F0E10\U000F0E13"
 
 interval:
   - interval: 15min
@@ -474,7 +489,8 @@ display:
       };
       
       auto draw_forecast = [&](int x, int y, const char* day_name, Sensor* high, Sensor* low, TextSensor* condition) {
-        const int box_width = 80;
+        const int box_width = 100;
+        const int box_h = 95;
         const int center_x = x + box_width / 2;
 
         // Day label (centered)
@@ -487,18 +503,25 @@ display:
         }
 
         // High/Low (centered)
-        if (high->has_state() && low->has_state()) {
-          it.printf(center_x, y + 50, id(font_small), TextAlign::TOP_CENTER, "%2.0f°/%2.0f°", high->state, low->state);
+        if (high->has_state()) {
+          it.printf(center_x, y + 50, id(font_small), TextAlign::TOP_CENTER, "%2.0f°", high->state);
         } else {
-          it.print(center_x, y + 50, id(font_small), TextAlign::TOP_CENTER, "--°/--°");
+          it.print(center_x, y + 50, id(font_small), TextAlign::TOP_CENTER, "--°");
+        }
+
+        if (low->has_state()) {
+          it.printf(center_x, y + 70, id(font_xs), TextAlign::TOP_CENTER, "%2.0f°", low->state);
+        } else {
+          it.print(center_x, y + 70, id(font_xs), TextAlign::TOP_CENTER, "--°");
         }
       };
+
 
       auto time = id(homeassistant_time).now();
 
       // Headings
       it.print(20, 5, id(font_large), "Extérieur");
-      it.print(350, 5, id(font_large), "Intérieur");
+      it.print(500, 5, id(font_large), "Intérieur");
 
       // Current condition icon
       if (id(weather_condition).has_state()) {
@@ -509,57 +532,68 @@ display:
       }
 
       // Current temperature
-      it.print(140, 60, id(weather_icons), "\U000F050F");
+      it.print(150, 60, id(weather_icons), "\U000F050F");
       if (id(ext_temp).has_state()) {
-        it.printf(170, 45, id(font_xl), "%.1f°", id(ext_temp).state);
+        it.printf(180, 45, id(font_xl), "%.1f°C", id(ext_temp).state);
       } else {
-        it.print(170, 45, id(font_xl), "---.-°");
+        it.print(180, 45, id(font_xl), "---.-°C");
       }
 
       // Current humidity
-      it.print(140, 90, id(weather_icons), "\U000F058E");
+      it.print(150, 90, id(weather_icons), "\U000F058E");
       if (id(ext_humidity).has_state()) {
-        it.printf(175, 95, id(font_small), "%.0f%%", id(ext_humidity).state);
+        it.printf(185, 95, id(font_small), "%.0f%% humidité", id(ext_humidity).state);
       } else {
-        it.print(175, 95, id(font_small), "--");
+        it.print(185, 95, id(font_small), "--");
       }
 
       //Precip chance
-      it.print(140, 120, id(weather_icons), "\U000F1A35");
+      it.print(150, 120, id(weather_icons), "\U000F1A35");
       if (id(forecast0_precip).has_state()) {
-        it.printf(175, 125, id(font_small), "%.0f%%", id(forecast0_precip).state);
+        it.printf(185, 125, id(font_small), "%.0f%% précipitations", id(forecast0_precip).state);
       } else {
-        it.print(175, 125, id(font_small), "--");
+        it.print(185, 125, id(font_small), "--");
       }
 
       // Prévisions météo
-      it.print(20, 200, id(font_small), "Prévisions météo:");
+      it.print(225, 220, id(font_small), TextAlign::TOP_CENTER, "Prévisions météo");
 
-      const char* jours_fr[7] = { "Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam." };
+      const char* jours_fr[7] = { "Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam" };
+      const char* jours_long_fr[7] = { "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi" };
       int dow = id(homeassistant_time).now().day_of_week - 1;
 
-      const char* jour0 = "Auj.";
-      const char* jour1 = "Dem.";
+      const char* jour0 = "Auj";
+      const char* jour1 = "Dem";
       const char* jour2 = jours_fr[(dow + 2) % 7];
       const char* jour3 = jours_fr[(dow + 3) % 7];
+
+      draw_soft_rounded_box(10, 246, 420, 95);
     
-      draw_forecast(10, 230,  jour0, id(forecast0_high), id(forecast0_low), id(forecast0_condition));
-      draw_forecast(90, 230, jour1, id(forecast1_high), id(forecast1_low), id(forecast1_condition));
-      draw_forecast(170, 230, jour2, id(forecast2_high), id(forecast2_low), id(forecast2_condition));
-      draw_forecast(250, 230, jour3, id(forecast3_high), id(forecast3_low), id(forecast3_condition));      
+      draw_forecast(10, 250,  jour0, id(forecast0_high), id(forecast0_low), id(forecast0_condition));
+      draw_forecast(110, 250, jour1, id(forecast1_high), id(forecast1_low), id(forecast1_condition));
+      draw_forecast(220, 250, jour2, id(forecast2_high), id(forecast2_low), id(forecast2_condition));
+      draw_forecast(330, 250, jour3, id(forecast3_high), id(forecast3_low), id(forecast3_condition));    
 
       // Thermostat layout
-      draw_thermostat(350, 50,  "Salon",     id(temp_salon),     id(setpoint_salon));
-      draw_thermostat(500, 50,  "Cuisine",   id(temp_cuisine),   id(setpoint_cuisine));
-      draw_thermostat(650, 50,  "Chambre",   id(temp_chambre),   id(setpoint_chambre));
-      draw_thermostat(350, 150, "Eloi",      id(temp_eloi),      id(setpoint_eloi));
-      draw_thermostat(500, 150, "Maxine",    id(temp_maxine),    id(setpoint_maxine));
-      draw_thermostat(650, 150, "Brasserie", id(temp_brasserie), id(setpoint_brasserie));
+      draw_thermostat(500, 50,  "Salon",     id(temp_salon),     id(setpoint_salon));
+      draw_thermostat(650, 50,  "Cuisine",   id(temp_cuisine),   id(setpoint_cuisine));
+      draw_thermostat(500, 150,  "Chambre",   id(temp_chambre),   id(setpoint_chambre));
+      draw_thermostat(650, 150, "Éloi",      id(temp_eloi),      id(setpoint_eloi));
+      draw_thermostat(500, 250, "Maxine",    id(temp_maxine),    id(setpoint_maxine));
+      draw_thermostat(650, 250, "Brasserie", id(temp_brasserie), id(setpoint_brasserie));
 
-      // Timestamp
-      it.printf(380, 420, id(font_xxl), "%04d-%02d-%02d",  //Date
+      it.print(795, 360, id(other_icons), TextAlign::TOP_RIGHT, "\U000F0E13");
+      it.printf(760, 355, id(font_large),  TextAlign::TOP_RIGHT,"%s",  
+          id(school_event).state.c_str()
+          );
+
+      it.print(795, 392, id(other_icons), TextAlign::TOP_RIGHT, "\U000F00ED");
+      it.printf(760, 390, id(font_large),  TextAlign::TOP_RIGHT,"%s",  
+          jours_long_fr[dow]
+          );
+      it.printf(795, 420, id(font_xxl),  TextAlign::TOP_RIGHT,"%04d-%02d-%02d",  //Date
           time.year, time.month, time.day_of_month
           );
-      it.printf(10, 460, id(font_xs), "MaJ: %04d-%02d-%02d %02d:%02d",
+      it.printf(10, 460, id(font_xxs), "MaJ: %04d-%02d-%02d %02d:%02d",
           time.year, time.month, time.day_of_month,
           time.hour, time.minute);
