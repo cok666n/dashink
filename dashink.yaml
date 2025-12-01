@@ -88,6 +88,7 @@ script:
                      id(temp_salon).has_state() &&
                      id(temp_cuisine).has_state() &&
                      id(temp_chambre).has_state() &&
+                     id(school_event).has_state() &&  // ADD THIS LINE
                      id(homeassistant_time).now().is_valid();
           then:
             - delay: 2s  # Small delay to ensure all data is stable
@@ -97,6 +98,15 @@ script:
                 ESP_LOGI("boot", "All initial data received, forcing display update");
             - script.execute: check_and_update_display
           else:
+            - lambda: |-
+                // Log which sensor is missing for debugging
+                if (!id(weather_condition).has_state()) ESP_LOGW("boot", "Waiting for weather_condition");
+                if (!id(ext_temp).has_state()) ESP_LOGW("boot", "Waiting for ext_temp");
+                if (!id(temp_salon).has_state()) ESP_LOGW("boot", "Waiting for temp_salon");
+                if (!id(temp_cuisine).has_state()) ESP_LOGW("boot", "Waiting for temp_cuisine");
+                if (!id(temp_chambre).has_state()) ESP_LOGW("boot", "Waiting for temp_chambre");
+                if (!id(school_event).has_state()) ESP_LOGW("boot", "Waiting for school_event");
+                if (!id(homeassistant_time).now().is_valid()) ESP_LOGW("boot", "Waiting for time sync");
             - delay: 5s  # Check again in 5 seconds
             - script.execute: check_initial_data_ready
 
@@ -127,7 +137,7 @@ script:
 text_sensor:
   - platform: homeassistant
     id: weather_condition
-    entity_id: weather.forecast_maison
+    entity_id: weather.tomorrow_io_maison_daily
   
   - platform: homeassistant
     id: forecast0_condition
