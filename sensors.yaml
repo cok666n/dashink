@@ -158,3 +158,123 @@ template:
           {% set forecast = daily['weather.tomorrow_io_maison_daily'].forecast %}
           {{ forecast[3].precipitation_probability if forecast and forecast[3].precipitation_probability is defined else none }}
 
+# ---------------------------------------------------------------
+# Capteurs scolaires DashInk — à insérer comme éléments de la liste
+# sous le "template:" existant (ne pas créer un 2e "template:")
+# ---------------------------------------------------------------
+  - trigger:
+      - platform: homeassistant
+        event: start
+      - platform: time
+        at: "00:01:00"
+      - platform: time_pattern
+        minutes: "/15"
+      - platform: state
+        entity_id:
+          - calendar.ecole
+          - calendar.ecole_eloi
+          - calendar.eloi
+          - calendar.ecole_maxine
+          - calendar.maxine
+    action:
+      - service: calendar.get_events
+        target:
+          entity_id:
+            - calendar.ecole
+            - calendar.ecole_eloi
+            - calendar.eloi
+            - calendar.ecole_maxine
+            - calendar.maxine
+        data:
+          start_date_time: "{{ today_at('00:00') }}"
+          duration:
+            hours: 24
+        response_variable: ag
+
+    sensor:
+      # ---- Ligne 1 : Jour X ----
+      - name: "Today's School Event"
+        unique_id: today_school_event
+        state: >
+          {{ ag.get('calendar.ecole', {'events': []}).events
+             | map(attribute='summary') | join(' · ') or 'Congé!' }}
+
+      # ---- Ligne 2 : Éloi (budget 29 caractères) ----
+      - name: "Ligne Eloi"
+        unique_id: ligne_eloi
+        attributes:
+          detail: >
+            {% set ns = namespace(l=[]) %}
+            {% for cal in ['calendar.ecole_eloi', 'calendar.eloi'] %}
+              {% for e in ag.get(cal, {'events': []}).events %}
+                {% if 'T' in e.start %}
+                  {% set ns.l = ns.l + [ e.summary ~ ' ' ~ (e.start | as_datetime | as_local).strftime('%Hh%M')
+                                         ~ '-' ~ (e.end | as_datetime | as_local).strftime('%Hh%M') ] %}
+                {% elif ' - ' in e.get('description', '') %}
+                  {% for p in e.description.split(' - ', 1)[1].split(' / ') %}
+                    {% set ns.l = ns.l + [ p ] %}
+                  {% endfor %}
+                {% else %}
+                  {% set ns.l = ns.l + [ e.summary ] %}
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+            {{ ns.l }}
+        state: >
+          {% set budget = 29 %}
+          {% set ns = namespace(cours=[], act=[], act_h=[]) %}
+          {% for cal in ['calendar.ecole_eloi', 'calendar.eloi'] %}
+            {% for e in ag.get(cal, {'events': []}).events %}
+              {% if 'T' in e.start %}
+                {% set ns.act   = ns.act   + [ e.summary ] %}
+                {% set ns.act_h = ns.act_h + [ e.summary ~ ' ' ~ (e.start | as_datetime | as_local).strftime('%Hh%M') ] %}
+              {% else %}
+                {% set ns.cours = ns.cours + [ e.summary ] %}
+              {% endif %}
+            {% endfor %}
+          {% endfor %}
+          {% set avec = (ns.cours + ns.act_h) | join(' · ') %}
+          {% set sans = (ns.cours + ns.act)   | join(' · ') %}
+          {% if avec | length <= budget %}{{ avec }}
+          {% elif sans | length <= budget %}{{ sans }}
+          {% else %}{{ sans | truncate(budget, true, '..', 0) }}{% endif %}
+
+      # ---- Ligne 3 : Maxine (budget 27 caractères) ----
+      - name: "Ligne Maxine"
+        unique_id: ligne_maxine
+        attributes:
+          detail: >
+            {% set ns = namespace(l=[]) %}
+            {% for cal in ['calendar.ecole_maxine', 'calendar.maxine'] %}
+              {% for e in ag.get(cal, {'events': []}).events %}
+                {% if 'T' in e.start %}
+                  {% set ns.l = ns.l + [ e.summary ~ ' ' ~ (e.start | as_datetime | as_local).strftime('%Hh%M')
+                                         ~ '-' ~ (e.end | as_datetime | as_local).strftime('%Hh%M') ] %}
+                {% elif ' - ' in e.get('description', '') %}
+                  {% for p in e.description.split(' - ', 1)[1].split(' / ') %}
+                    {% set ns.l = ns.l + [ p ] %}
+                  {% endfor %}
+                {% else %}
+                  {% set ns.l = ns.l + [ e.summary ] %}
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+            {{ ns.l }}
+        state: >
+          {% set budget = 27 %}
+          {% set ns = namespace(cours=[], act=[], act_h=[]) %}
+          {% for cal in ['calendar.ecole_maxine', 'calendar.maxine'] %}
+            {% for e in ag.get(cal, {'events': []}).events %}
+              {% if 'T' in e.start %}
+                {% set ns.act   = ns.act   + [ e.summary ] %}
+                {% set ns.act_h = ns.act_h + [ e.summary ~ ' ' ~ (e.start | as_datetime | as_local).strftime('%Hh%M') ] %}
+              {% else %}
+                {% set ns.cours = ns.cours + [ e.summary ] %}
+              {% endif %}
+            {% endfor %}
+          {% endfor %}
+          {% set avec = (ns.cours + ns.act_h) | join(' · ') %}
+          {% set sans = (ns.cours + ns.act)   | join(' · ') %}
+          {% if avec | length <= budget %}{{ avec }}
+          {% elif sans | length <= budget %}{{ sans }}
+          {% else %}{{ sans | truncate(budget, true, '..', 0) }}{% endif %}

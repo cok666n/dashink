@@ -12,6 +12,17 @@ esphome:
       then:
         - delay: 10s
         - script.execute: check_initial_data_ready
+        # Garde-fou : si une entite HA manque, on dessine quand meme apres 60 s
+        - delay: 60s
+        - if:
+            condition:
+              lambda: return !id(initial_boot_complete);
+            then:
+              - lambda: |-
+                  id(initial_boot_complete) = true;
+                  id(force_refresh) = true;
+                  ESP_LOGW("boot", "Timeout: dessin avec donnees partielles");
+              - script.execute: check_and_update_display
 
 esp32:
   board: esp32dev
@@ -88,7 +99,7 @@ script:
                      id(temp_salon).has_state() &&
                      id(temp_cuisine).has_state() &&
                      id(temp_chambre).has_state() &&
-                     id(school_event).has_state() &&  // ADD THIS LINE
+                     id(school_day).has_state() &&
                      id(homeassistant_time).now().is_valid();
           then:
             - delay: 2s  # Small delay to ensure all data is stable
@@ -105,7 +116,7 @@ script:
                 if (!id(temp_salon).has_state()) ESP_LOGW("boot", "Waiting for temp_salon");
                 if (!id(temp_cuisine).has_state()) ESP_LOGW("boot", "Waiting for temp_cuisine");
                 if (!id(temp_chambre).has_state()) ESP_LOGW("boot", "Waiting for temp_chambre");
-                if (!id(school_event).has_state()) ESP_LOGW("boot", "Waiting for school_event");
+                if (!id(school_day).has_state()) ESP_LOGW("boot", "Waiting for school_day");
                 if (!id(homeassistant_time).now().is_valid()) ESP_LOGW("boot", "Waiting for time sync");
             - delay: 5s  # Check again in 5 seconds
             - script.execute: check_initial_data_ready
@@ -155,9 +166,28 @@ text_sensor:
     id: forecast3_condition
     entity_id: sensor.forecast_day_3_condition
   
+  # ---- Bloc scolaire ----
   - platform: homeassistant
-    id: school_event
+    id: school_day
     entity_id: sensor.today_s_school_event
+    on_value: &refresh_display
+      then:
+        - if:
+            condition:
+              lambda: return id(initial_boot_complete);
+            then:
+              - lambda: id(force_refresh) = true;
+              - script.execute: check_and_update_display
+
+  - platform: homeassistant
+    id: ligne_eloi
+    entity_id: sensor.ligne_eloi
+    on_value: *refresh_display
+
+  - platform: homeassistant
+    id: ligne_maxine
+    entity_id: sensor.ligne_maxine
+    on_value: *refresh_display
 
 sensor:
   - platform: homeassistant
@@ -347,7 +377,7 @@ font:
   - file: "gfonts://Martian Mono"
     id: font_large
     size: 32
-    glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ° !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+    glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ°· !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
 
   - file: "gfonts://Martian Mono"
     id: font_xl
@@ -363,7 +393,7 @@ font:
   - file: "gfonts://Martian Mono"
     id: font_small
     size: 20
-    glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ° !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+    glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ°· !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
 
   # Smallest version of the same font
   - file: "gfonts://Martian Mono"
@@ -375,7 +405,7 @@ font:
   - file: "gfonts://Martian Mono"
     id: font_xxs
     size: 12
-    glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ° !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+    glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ°· !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
   
   - file: "https://raw.githubusercontent.com/Templarian/MaterialDesign-Webfont/master/fonts/materialdesignicons-webfont.ttf"
     id: weather_icons_large
@@ -527,6 +557,14 @@ display:
       };
 
 
+      // Etat texte HA nettoye ("" si absent / unknown / unavailable)
+      auto clean = [](TextSensor* s) -> std::string {
+        if (s == nullptr || !s->has_state()) return std::string();
+        std::string v = s->state;
+        if (v == "unknown" || v == "unavailable" || v == "None") return std::string();
+        return v;
+      };
+
       auto time = id(homeassistant_time).now();
 
       // Headings
@@ -592,10 +630,24 @@ display:
       draw_thermostat(500, 250, "Maxine",    id(temp_maxine),    id(setpoint_maxine));
       draw_thermostat(650, 250, "Brasserie", id(temp_brasserie), id(setpoint_brasserie));
 
-      it.print(795, 360, id(other_icons), TextAlign::TOP_RIGHT, "\U000F0E13");
-      it.printf(760, 355, id(font_large),  TextAlign::TOP_RIGHT,"%s",  
-          id(school_event).state.c_str()
-          );
+      // ---- Bloc scolaire (bas-gauche) ----
+      // Bandes libres : y 342-390 pleine largeur | y 390-420 jusqu'a x=568 | y 420-460 jusqu'a x=345
+      {
+        std::string jour   = clean(id(school_day));
+        std::string eloi   = clean(id(ligne_eloi));
+        std::string maxine = clean(id(ligne_maxine));
+
+        if (!jour.empty()) {
+          it.print(20, 344, id(other_icons), "\U000F0E13");
+          it.printf(58, 342, id(font_large), "%s", jour.c_str());
+        }
+        if (!eloi.empty()) {
+          it.printf(20, 378, id(font_small), "Éloi : %s", eloi.c_str());
+        }
+        if (!maxine.empty()) {
+          it.printf(20, 400, id(font_small), "Maxine : %s", maxine.c_str());
+        }
+      }
 
       it.print(795, 392, id(other_icons), TextAlign::TOP_RIGHT, "\U000F00ED");
       it.printf(760, 390, id(font_large),  TextAlign::TOP_RIGHT,"%s",  
