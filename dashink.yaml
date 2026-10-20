@@ -544,7 +544,7 @@ display:
 
         if (temp->has_state()) {
           it.print(x, y + 28, id(weather_icons), "\U000F050F");
-          it.printf(x + 30, y + 25, id(font_large), "%.0f°", temp->state);
+          it.printf(x + 30, y + 25, id(font_large), "%.1f°", temp->state);
         } else {
           it.print(x + 30, y + 25, id(font_large), "--°");
         }
