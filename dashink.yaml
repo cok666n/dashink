@@ -56,7 +56,7 @@ captive_portal:
 time:
   - platform: homeassistant  # Preferred if connected to HA
     id: homeassistant_time
-          
+
   # Alternative: NTP (use if not using Home Assistant)
   - platform: sntp
     id: sntp_time
@@ -69,7 +69,7 @@ globals:
     type: unsigned long
     restore_value: no
     initial_value: '0'
-  
+
   - id: boot_time
     type: unsigned long
     restore_value: no
@@ -126,13 +126,13 @@ script:
     then:
       - lambda: |-
           unsigned long now = millis();
-          
+
           // During boot phase, only update if initial data is ready
           if (!id(initial_boot_complete)) {
             ESP_LOGD("display", "Skipping update - waiting for initial data");
             return;
           }
-          
+
           // Normal update logic after boot complete
           bool can_refresh = (now - id(last_update_time) > 600000);  // 10 min
 
@@ -149,7 +149,7 @@ text_sensor:
   - platform: homeassistant
     id: weather_condition
     entity_id: weather.tomorrow_io_maison_daily
-  
+
   - platform: homeassistant
     id: forecast0_condition
     entity_id: sensor.forecast_day_0_condition
@@ -165,7 +165,7 @@ text_sensor:
   - platform: homeassistant
     id: forecast3_condition
     entity_id: sensor.forecast_day_3_condition
-  
+
   # ---- Bloc scolaire ----
   - platform: homeassistant
     id: school_day
@@ -189,6 +189,33 @@ text_sensor:
     entity_id: sensor.ligne_maxine
     on_value: *refresh_display
 
+  - platform: homeassistant
+    id: dashink_entete
+    entity_id: sensor.dashink_entete
+    on_value: *refresh_display
+
+  # la date du jour affiche, lue dans l'attribut du meme capteur
+  - platform: homeassistant
+    id: dashink_date
+    entity_id: sensor.dashink_entete
+    attribute: date
+    on_value: *refresh_display
+
+  - platform: homeassistant
+    id: dashink_rappel
+    entity_id: sensor.dashink_rappel
+    on_value: *refresh_display
+
+  - platform: homeassistant
+    id: dashink_sport
+    entity_id: sensor.dashink_sport
+    on_value: *refresh_display
+
+  - platform: homeassistant
+    id: dashink_collecte
+    entity_id: sensor.dashink_collecte
+    on_value: *refresh_display
+
 sensor:
   - platform: homeassistant
     id: ext_temp
@@ -203,11 +230,11 @@ sensor:
   - platform: homeassistant
     id: forecast0_high
     entity_id: sensor.forecast_day_0_high
-        
+
   - platform: homeassistant
     id: forecast0_low
     entity_id: sensor.forecast_day_0_low
-  
+
   - platform: homeassistant
     id: forecast0_precip_amount
     entity_id: sensor.forecast_day_0_precipitation_amount
@@ -219,35 +246,35 @@ sensor:
   - platform: homeassistant
     id: forecast0_feelslike
     entity_id: sensor.forecast_day_0_feels_like
-  
+
   - platform: homeassistant
     id: forecast1_high
     entity_id: sensor.forecast_day_1_high
-  
+
   - platform: homeassistant
     id: forecast1_low
     entity_id: sensor.forecast_day_1_low
-  
+
   - platform: homeassistant
     id: forecast1_precip
     entity_id: sensor.forecast_day_1_precip_chance
-  
+
   - platform: homeassistant
     id: forecast2_high
     entity_id: sensor.forecast_day_2_high
-  
+
   - platform: homeassistant
     id: forecast2_low
     entity_id: sensor.forecast_day_2_low
-  
+
   - platform: homeassistant
     id: forecast2_precip
     entity_id: sensor.forecast_day_2_precip_chance
-  
+
   - platform: homeassistant
     id: forecast3_high
     entity_id: sensor.forecast_day_3_high
-  
+
   - platform: homeassistant
     id: forecast3_low
     entity_id: sensor.forecast_day_3_low
@@ -256,7 +283,7 @@ sensor:
     id: forecast3_precip
     entity_id: sensor.forecast_day_3_precip_chance
 
-  # Thermostats 
+  # Thermostats
   - platform: homeassistant
     id: temp_salon
     entity_id: climate.thermostat_salon
@@ -292,7 +319,7 @@ sensor:
             then:
               - lambda: id(force_refresh) = true;
               - script.execute: check_and_update_display
-    
+
   - platform: homeassistant
     id: temp_chambre
     entity_id: climate.thermostat_chambre
@@ -310,7 +337,7 @@ sensor:
             then:
               - lambda: id(force_refresh) = true;
               - script.execute: check_and_update_display
-  
+
   - platform: homeassistant
     id: temp_cuisine
     entity_id: climate.thermostat_cuisine
@@ -366,7 +393,7 @@ sensor:
               - script.execute: check_and_update_display
 
 # Using ESP32's HSPI bus (matches your pinout)
-spi: 
+spi:
   clk_pin: GPIO13   # P13 = SCLK (HSPI CLK)
   mosi_pin: GPIO14  # P14 = DIN (HSPI MOSI)
   miso_pin: GPIO12  # HSPI MISO (unused but required)
@@ -388,7 +415,7 @@ font:
     id: font_xxl
     size: 60
     glyphs: "1234567890:- °CcFf.,"
-  
+
   # Smaller version of the same font
   - file: "gfonts://Martian Mono"
     id: font_small
@@ -406,7 +433,7 @@ font:
     id: font_xxs
     size: 12
     glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ°· !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
-  
+
   - file: "https://raw.githubusercontent.com/Templarian/MaterialDesign-Webfont/master/fonts/materialdesignicons-webfont.ttf"
     id: weather_icons_large
     size: 120
@@ -421,6 +448,18 @@ font:
     id: other_icons
     size: 32
     glyphs: "\U000F00ED\U000F0E10\U000F0E13"
+
+  # calendrier-aujourd'hui / calendrier-fleche-droite, pour le bandeau du jour
+  - file: "https://raw.githubusercontent.com/Templarian/MaterialDesign-Webfont/master/fonts/materialdesignicons-webfont.ttf"
+    id: ico_s
+    size: 15
+    glyphs: "\U000F00F6\U000F1135"
+
+  # icones de cours + espadrille + bacs de collecte
+  - file: "https://raw.githubusercontent.com/Templarian/MaterialDesign-Webfont/master/fonts/materialdesignicons-webfont.ttf"
+    id: ico_m
+    size: 19
+    glyphs: "\U000F05DA\U000F070E\U000F05CA\U000F0F70\U000F0322\U000F0405\U000F18FB\U000F067D\U000F15FB\U000F0388\U000F00EE\U000F15C8\U000F044C\U000F0A7A"
 
 interval:
   - interval: 15min
@@ -527,7 +566,7 @@ display:
           it.print(x + 35, y + 65, id(font_small), "--°C");
         }
       };
-      
+
       auto draw_forecast = [&](int x, int y, const char* day_name, Sensor* high, Sensor* low, TextSensor* condition) {
         const int box_width = 100;
         const int box_h = 95;
@@ -567,47 +606,51 @@ display:
 
       auto time = id(homeassistant_time).now();
 
-      // Headings
-      it.print(20, 5, id(font_large), "Extérieur");
-      it.print(500, 5, id(font_large), "Intérieur");
+      // La date du jour affiche remplace les deux titres : un gros nuage et
+      // six thermostats n'ont pas besoin d'etiquette.
+      {
+        std::string d = clean(id(dashink_date));
+        if (!d.empty()) {
+          d[0] = toupper(d[0]);
+          it.printf(795, 5, id(font_large), TextAlign::TOP_RIGHT, "%s", d.c_str());
+        }
+      }
 
       // Current condition icon
       if (id(weather_condition).has_state()) {
         const char* condition = id(weather_condition).state.c_str();
         const char* icon_char = get_weather_icon(condition);
-        it.print(10, 40, id(weather_icons_large), icon_char);
-        it.print(20, 160, id(font_small), get_weather_description_fr(condition));
+        it.print(8, 44, id(weather_icons_large), icon_char);
+        it.print(152, 94, id(font_small), get_weather_description_fr(condition));
       }
 
-      // Current temperature
-      it.print(150, 60, id(weather_icons), "\U000F050F");
+      // Temperature : le gros chiffre se suffit, plus de thermometre
       if (id(ext_temp).has_state()) {
-        it.printf(180, 45, id(font_xl), "%.1f°C", id(ext_temp).state);
+        it.printf(150, 44, id(font_xl), "%.1f°C", id(ext_temp).state);
       } else {
-        it.print(180, 45, id(font_xl), "---.-°C");
+        it.print(150, 44, id(font_xl), "---.-°C");
       }
 
-      // Current humidity
-      it.print(150, 90, id(weather_icons), "\U000F058E");
+      // Humidite
+      it.print(150, 124, id(weather_icons), "\U000F058E");
       if (id(ext_humidity).has_state()) {
-        it.printf(185, 95, id(font_small), "%.0f%% humidité", id(ext_humidity).state);
+        it.printf(186, 128, id(font_small), "%.0f%% humidité", id(ext_humidity).state);
       } else {
-        it.print(185, 95, id(font_small), "--");
+        it.print(186, 128, id(font_small), "--");
       }
 
-      //Precip chance
-      it.print(150, 120, id(weather_icons), "\U000F1A35");
+      // Precipitations
+      it.print(150, 156, id(weather_icons), "\U000F1A35");
       if (id(forecast0_precip).has_state()) {
-        it.printf(185, 125, id(font_small), "%.0f%% précipitations", id(forecast0_precip).state);
+        it.printf(186, 160, id(font_small), "%.0f%% précipitations", id(forecast0_precip).state);
       } else {
-        it.print(185, 125, id(font_small), "--");
+        it.print(186, 160, id(font_small), "--");
       }
 
-      // Prévisions météo
-      it.print(225, 220, id(font_small), TextAlign::TOP_CENTER, "Prévisions météo");
+      // Prévisions météo, calées sur le meme axe que le reste
+      it.print(20, 200, id(font_small), "Prévisions météo");
 
       const char* jours_fr[7] = { "Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam" };
-      const char* jours_long_fr[7] = { "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi" };
       int dow = id(homeassistant_time).now().day_of_week - 1;
 
       const char* jour0 = "Auj";
@@ -615,12 +658,12 @@ display:
       const char* jour2 = jours_fr[(dow + 2) % 7];
       const char* jour3 = jours_fr[(dow + 3) % 7];
 
-      draw_soft_rounded_box(10, 246, 420, 95);
-    
-      draw_forecast(10, 250,  jour0, id(forecast0_high), id(forecast0_low), id(forecast0_condition));
-      draw_forecast(110, 250, jour1, id(forecast1_high), id(forecast1_low), id(forecast1_condition));
-      draw_forecast(220, 250, jour2, id(forecast2_high), id(forecast2_low), id(forecast2_condition));
-      draw_forecast(330, 250, jour3, id(forecast3_high), id(forecast3_low), id(forecast3_condition));    
+      draw_soft_rounded_box(10, 226, 420, 99);
+
+      draw_forecast(10, 230,  jour0, id(forecast0_high), id(forecast0_low), id(forecast0_condition));
+      draw_forecast(110, 230, jour1, id(forecast1_high), id(forecast1_low), id(forecast1_condition));
+      draw_forecast(220, 230, jour2, id(forecast2_high), id(forecast2_low), id(forecast2_condition));
+      draw_forecast(330, 230, jour3, id(forecast3_high), id(forecast3_low), id(forecast3_condition));
 
       // Thermostat layout
       draw_thermostat(500, 50,  "Salon",     id(temp_salon),     id(setpoint_salon));
@@ -630,32 +673,118 @@ display:
       draw_thermostat(500, 250, "Maxine",    id(temp_maxine),    id(setpoint_maxine));
       draw_thermostat(650, 250, "Brasserie", id(temp_brasserie), id(setpoint_brasserie));
 
-      // ---- Bloc scolaire (bas-gauche) ----
-      // Bandes libres : y 342-390 pleine largeur | y 390-420 jusqu'a x=568 | y 420-460 jusqu'a x=345
+      // ================= Bloc scolaire =================
+      // y 348 bandeau du jour | rappel a droite
+      // y 374 jour-cycle      | bandeau tenue de sport a droite
+      // y 410 ELOI   y 432 MAXI   (pleine largeur, 760 px)
       {
-        std::string jour   = clean(id(school_day));
-        std::string eloi   = clean(id(ligne_eloi));
-        std::string maxine = clean(id(ligne_maxine));
+        // Largeur reelle d'un texte : strlen compte les octets, et un accent
+        // en vaut deux. Seul get_text_bounds donne la bonne valeur.
+        auto tw = [&](const std::string &t, decltype(id(font_small)) f) -> int {
+          int x1, y1, w, h;
+          it.get_text_bounds(0, 0, t.c_str(), f, TextAlign::TOP_LEFT, &x1, &y1, &w, &h);
+          return w;
+        };
+        auto split = [](const std::string &s, char sep) -> std::vector<std::string> {
+          std::vector<std::string> out;
+          size_t p = 0;
+          while (true) {
+            size_t q = s.find(sep, p);
+            out.push_back(s.substr(p, q == std::string::npos ? std::string::npos : q - p));
+            if (q == std::string::npos) break;
+            p = q + 1;
+          }
+          return out;
+        };
+        // cle a trois lettres -> glyphe MDI (voir sensor.ligne_*)
+        auto glyphe = [](const std::string &k) -> const char* {
+          if (k == "bib") return "\U000F05DA";
+          if (k == "edu") return "\U000F070E";
+          if (k == "ang") return "\U000F05CA";
+          if (k == "mus") return "\U000F0F70";
+          if (k == "tic") return "\U000F0322";
+          if (k == "spo") return "\U000F0405";
+          if (k == "pre") return "\U000F18FB";
+          if (k == "pia") return "\U000F067D";
+          if (k == "dan") return "\U000F15FB";
+          if (k == "dru") return "\U000F0388";
+          return "\U000F00EE";
+        };
 
-        if (!jour.empty()) {
-          it.print(20, 344, id(other_icons), "\U000F0E13");
-          it.printf(58, 342, id(font_large), "%s", jour.c_str());
+        std::string entete = clean(id(dashink_entete));
+        std::string jour   = clean(id(school_day));
+        std::string rappel = clean(id(dashink_rappel));
+        std::string sport  = clean(id(dashink_sport));
+
+        // Bandeau du jour affiche : AUJOURD'HUI ou DEMAIN · MERCREDI
+        if (!entete.empty()) {
+          bool demain = entete.rfind("DEMAIN", 0) == 0;
+          int bw = tw(entete, id(font_xxs)) + 34;
+          it.filled_rectangle(20, 348, bw, 21);
+          it.print(26, 351, id(ico_s), COLOR_OFF, demain ? "\U000F1135" : "\U000F00F6");
+          it.printf(46, 353, id(font_xxs), COLOR_OFF, "%s", entete.c_str());
         }
-        if (!eloi.empty()) {
-          it.printf(20, 378, id(font_small), "Éloi : %s", eloi.c_str());
+
+        // Ligne de rappel, alignee a droite
+        if (!rappel.empty())
+          it.printf(780, 352, id(font_small), TextAlign::TOP_RIGHT, "%s", rappel.c_str());
+
+        // Jour-cycle
+        if (!jour.empty())
+          it.printf(20, 374, id(font_large), "%s", jour.c_str());
+
+        // Bandeau tenue de sport, alignee a droite, en aplat inverse
+        if (!sport.empty()) {
+          int sw = tw(sport, id(font_xxs)) + 52;
+          it.filled_rectangle(780 - sw, 374, sw, 25);
+          it.print(786 - sw, 378, id(ico_m), COLOR_OFF, "\U000F15C8");
+          it.printf(812 - sw, 381, id(font_xxs), COLOR_OFF, "%s", sport.c_str());
         }
-        if (!maxine.empty()) {
-          it.printf(20, 400, id(font_small), "Maxine : %s", maxine.c_str());
+
+        // Une ligne d'enfant : pastille inversee, puis icone + nom + heure
+        auto ligne_enfant = [&](int y, const char *nom, TextSensor *src) {
+          std::string raw = clean(src);
+          if (raw.empty()) return;              // rien a dire : la ligne disparait
+          int lw = tw(nom, id(font_xxs));
+          it.filled_rectangle(20, y + 1, lw + 12, 18);
+          it.printf(26, y + 4, id(font_xxs), COLOR_OFF, "%s", nom);
+          int cx = 20 + lw + 22;
+          std::vector<std::string> items = split(raw, ';');
+          for (size_t i = 0; i < items.size(); i++) {
+            if (items[i].empty()) continue;
+            if (cx > 20) {
+              if (i) {
+                it.print(cx, y + 2, id(font_small), "·");
+                cx += tw("·", id(font_small)) + 10;
+              }
+            }
+            std::vector<std::string> p = split(items[i], '|');
+            std::string t;
+            if (p.size() >= 2) {
+              it.print(cx, y, id(ico_m), glyphe(p[0]));
+              cx += 23;
+              t = p[1];
+              if (p.size() >= 3 && !p[2].empty()) t += " " + p[2];
+            } else {
+              t = items[i];                     // ancien format : texte brut
+            }
+            it.printf(cx, y + 2, id(font_small), "%s", t.c_str());
+            cx += tw(t, id(font_small)) + 9;
+          }
+        };
+        ligne_enfant(410, "ÉLOI", id(ligne_eloi));
+        ligne_enfant(432, "MAXI", id(ligne_maxine));
+
+        // Collecte : uniquement le soir de la veille, en aplat inverse
+        std::string collecte = clean(id(dashink_collecte));
+        if (!collecte.empty()) {
+          int cw = tw(collecte, id(font_xxs)) + 52;
+          it.filled_rectangle(780 - cw, 452, cw, 25);
+          it.print(786 - cw, 456, id(ico_m), COLOR_OFF,
+                   collecte.rfind("REC", 0) == 0 ? "\U000F044C" : "\U000F0A7A");
+          it.printf(812 - cw, 459, id(font_xxs), COLOR_OFF, "%s", collecte.c_str());
         }
       }
 
-      it.print(795, 392, id(other_icons), TextAlign::TOP_RIGHT, "\U000F00ED");
-      it.printf(760, 390, id(font_large),  TextAlign::TOP_RIGHT,"%s",  
-          jours_long_fr[dow]
-          );
-      it.printf(795, 420, id(font_xxl),  TextAlign::TOP_RIGHT,"%04d-%02d-%02d",  //Date
-          time.year, time.month, time.day_of_month
-          );
-      it.printf(10, 460, id(font_xxs), "MaJ: %04d-%02d-%02d %02d:%02d",
-          time.year, time.month, time.day_of_month,
-          time.hour, time.minute);
+      it.printf(10, 464, id(font_xxs), "MaJ: %02d-%02d %02d:%02d",
+          time.month, time.day_of_month, time.hour, time.minute);
