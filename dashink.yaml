@@ -417,17 +417,22 @@ font:
     size: 20
     glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ°·’–—œŒ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
 
-  # Smallest version of the same font
+  # Une seule petite police regulière : minimums des prévisions + ligne MaJ.
+  # Remplace les anciennes font_xs (16) et font_xxs (12).
   - file: "gfonts://Martian Mono"
-    id: font_xs
-    size: 16
-    glyphs: "*+,- ./0123456789:;°CcFf"
+    id: font_tiny
+    size: 14
+    glyphs: "MaJ *+,-./0123456789:;°"
 
-  # Smallest version of the same font
-  - file: "gfonts://Martian Mono"
-    id: font_xxs
-    size: 12
-    glyphs: "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ°·’–—œŒ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+  # Bandeaux d'alerte : gras noir sur blanc. Sur e-ink l'encre bave dans le
+  # blanc, donc un texte inversé maigrit et se bouche ; le gras ne souffre pas.
+  - file:
+      type: gfonts
+      family: Martian Mono
+      weight: bold
+    id: font_gras
+    size: 15
+    glyphs: " '·ÀÇÈÉÊÎÔÙABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
   - file: "https://raw.githubusercontent.com/Templarian/MaterialDesign-Webfont/master/fonts/materialdesignicons-webfont.ttf"
     id: weather_icons_large
@@ -439,17 +444,12 @@ font:
     size: 32
     glyphs: "\U000F0590\U000F0591\U000F0592\U000F0593\U000F0594\U000F0595\U000F0596\U000F0597\U000F0598\U000F0599\U000F059D\U000F059E\U000F067E\U000F067F\U000F05E1\U000F058E\U000F0493\U000F050F\U000F1A35"
 
-  # calendrier-aujourd'hui / calendrier-fleche-droite, pour le bandeau du jour
+  # Une seule police d'icones : calendriers, cours, espadrille, bacs.
+  # Remplace les anciennes ico_s (15) et ico_m (19).
   - file: "https://raw.githubusercontent.com/Templarian/MaterialDesign-Webfont/master/fonts/materialdesignicons-webfont.ttf"
-    id: ico_s
-    size: 15
-    glyphs: "\U000F00F6\U000F1135\U000F044C\U000F0A7A"
-
-  # icones de cours + espadrille + bacs de collecte
-  - file: "https://raw.githubusercontent.com/Templarian/MaterialDesign-Webfont/master/fonts/materialdesignicons-webfont.ttf"
-    id: ico_m
-    size: 19
-    glyphs: "\U000F05DA\U000F070E\U000F05CA\U000F0F70\U000F0322\U000F0405\U000F18FB\U000F067D\U000F15FB\U000F0388\U000F00EE\U000F15C8"
+    id: ico
+    size: 18
+    glyphs: "\U000F00F6\U000F1135\U000F044C\U000F0A7A\U000F05DA\U000F070E\U000F05CA\U000F0F70\U000F0322\U000F0405\U000F18FB\U000F067D\U000F15FB\U000F0388\U000F00EE\U000F15C8"
 
 interval:
   - interval: 15min
@@ -579,9 +579,9 @@ display:
         }
 
         if (low->has_state()) {
-          it.printf(center_x, y + 70, id(font_xs), TextAlign::TOP_CENTER, "%2.0f°", low->state);
+          it.printf(center_x, y + 70, id(font_tiny), TextAlign::TOP_CENTER, "%2.0f°", low->state);
         } else {
-          it.print(center_x, y + 70, id(font_xs), TextAlign::TOP_CENTER, "--°");
+          it.print(center_x, y + 70, id(font_tiny), TextAlign::TOP_CENTER, "--°");
         }
       };
 
@@ -710,10 +710,8 @@ display:
         // Bandeau du jour affiche : AUJOURD'HUI ou DEMAIN · MERCREDI
         if (!entete.empty()) {
           bool demain = entete.rfind("DEMAIN", 0) == 0;
-          int bw = tw(entete, id(font_xxs)) + 34;
-          it.filled_rectangle(20, 343, bw, 21);
-          it.print(26, 346, id(ico_s), COLOR_OFF, demain ? "\U000F1135" : "\U000F00F6");
-          it.printf(46, 348, id(font_xxs), COLOR_OFF, "%s", entete.c_str());
+          it.print(20, 344, id(ico), demain ? "\U000F1135" : "\U000F00F6");
+          it.printf(42, 346, id(font_gras), "%s", entete.c_str());
         }
 
         // Ligne de rappel, alignee a droite
@@ -722,24 +720,20 @@ display:
 
         // Jour-cycle
         if (!jour.empty())
-          it.printf(20, 367, id(font_large), "%s", jour.c_str());
+          it.printf(20, 364, id(font_large), "%s", jour.c_str());
 
-        // Bandeau tenue de sport, alignee a droite, en aplat inverse
+        // Tenue de sport, alignee a droite
         if (!sport.empty()) {
-          int sw = tw(sport, id(font_xxs)) + 34;
-          it.filled_rectangle(780 - sw, 369, sw, 25);
-          it.print(786 - sw, 372, id(ico_m), COLOR_OFF, "\U000F15C8");
-          it.printf(812 - sw, 375, id(font_xxs), COLOR_OFF, "%s", sport.c_str());
+          it.print(780 - tw(sport, id(font_gras)) - 22, 371, id(ico), "\U000F15C8");
+          it.printf(780, 373, id(font_gras), TextAlign::TOP_RIGHT, "%s", sport.c_str());
         }
 
         // Une ligne d'enfant : pastille inversee, puis icone + nom + heure
         auto ligne_enfant = [&](int y, const char *nom, TextSensor *src) {
           std::string raw = clean(src);
           if (raw.empty()) return;              // rien a dire : la ligne disparait
-          int lw = tw(nom, id(font_xxs));
-          it.filled_rectangle(20, y + 1, lw + 12, 18);
-          it.printf(26, y + 4, id(font_xxs), COLOR_OFF, "%s", nom);
-          int cx = 20 + lw + 22;
+          it.printf(20, y + 3, id(font_gras), "%s", nom);
+          int cx = 20 + tw(nom, id(font_gras)) + 14;
           std::vector<std::string> items = split(raw, ';');
           bool premier = true;
           for (size_t i = 0; i < items.size(); i++) {
@@ -764,26 +758,24 @@ display:
             }
             premier = false;
             if (avec_icone) {
-              it.print(cx, y, id(ico_m), glyphe(p[0]));
+              it.print(cx, y + 1, id(ico), glyphe(p[0]));
               cx += 23;
             }
             it.printf(cx, y + 2, id(font_small), "%s", t.c_str());
             cx += tw(t, id(font_small)) + 9;
           }
         };
-        ligne_enfant(408, "ÉLOI", id(ligne_eloi));
-        ligne_enfant(436, "MAXI", id(ligne_maxine));
+        ligne_enfant(405, "ÉLOI", id(ligne_eloi));
+        ligne_enfant(433, "MAXI", id(ligne_maxine));
 
-        // Collecte : uniquement le soir de la veille, en aplat inverse
+        // Collecte : uniquement le soir de la veille
         std::string collecte = clean(id(dashink_collecte));
         if (!collecte.empty()) {
-          int cw = tw(collecte, id(font_xxs)) + 30;
-          it.filled_rectangle(780 - cw, 462, cw, 17);
-          it.print(786 - cw, 463, id(ico_s), COLOR_OFF,
+          it.print(780 - tw(collecte, id(font_gras)) - 22, 459, id(ico),
                    collecte.rfind("REC", 0) == 0 ? "\U000F044C" : "\U000F0A7A");
-          it.printf(808 - cw, 464, id(font_xxs), COLOR_OFF, "%s", collecte.c_str());
+          it.printf(780, 461, id(font_gras), TextAlign::TOP_RIGHT, "%s", collecte.c_str());
         }
       }
 
-      it.printf(10, 464, id(font_xxs), "MaJ: %02d-%02d %02d:%02d",
+      it.printf(10, 462, id(font_tiny), "MaJ: %02d-%02d %02d:%02d",
           time.month, time.day_of_month, time.hour, time.minute);
